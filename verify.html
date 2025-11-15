@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Email Verified</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card: rgba(255, 255, 255, 0.25);
+      --text: #1e293b;
+      --text-light: #64748b;
+      --primary: #6366f1;
+      --success: #10b981;
+      --border: rgba(255, 255, 255, 0.3);
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+
+    [data-theme="dark"] {
+      --bg: #0f172a;
+      --card: rgba(15, 23, 42, 0.4);
+      --text: #f1f5f9;
+      --text-light: #94a3b8;
+      --border: rgba(255, 255, 255, 0.1);
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .card {
+      background: var(--card);
+      backdrop-filter: blur(16px);
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      padding: 40px;
+      max-width: 400px;
+      width: 100%;
+      text-align: center;
+      box-shadow: var(--shadow);
+      animation: fadeIn 0.6s ease-out;
+    }
+
+    .icon {
+      font-size: 64px;
+      margin-bottom: 20px;
+    }
+
+    h2 {
+      margin-bottom: 16px;
+      font-weight: 600;
+    }
+
+    p {
+      color: var(--text-light);
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+
+    button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 14px 28px;
+      border-radius: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background: #4f46e5;
+      transform: translateY(-2px);
+    }
+
+    .status {
+      margin-top: 20px;
+      font-weight: 500;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <div class="icon">Envelope</div>
+    <h2>Check Your Email</h2>
+    <p>We sent a verification link to your inbox. Click it to activate your account.</p>
+    <button id="checkBtn">I’ve Verified – Continue</button>
+    <div class="status" id="status"></div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, reload } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyB7e1wa8MUHZgn7epP0dOFtq2MmhSver6c",
+      authDomain: "signupapp-a385c.firebaseapp.com",
+      projectId: "signupapp-a385c",
+      storageBucket: "signupapp-a385c.firebasestorage.app",
+      messagingSenderId: "1089414066908",
+      appId: "1:1089414066908:web:1c5ed9d0a766a3385dfa19"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const status = document.getElementById('status');
+    const theme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', theme);
+
+    document.getElementById('checkBtn').addEventListener('click', async () => {
+      if (!auth.currentUser) {
+        status.innerHTML = '<span style="color:#ef4444">Not signed in.</span>';
+        return;
+      }
+      await reload(auth.currentUser);
+      if (auth.currentUser.emailVerified) {
+        status.innerHTML = '<span style="color:#10b981">Verified!</span>';
+        setTimeout(() => location.href = 'dashboard.html', 1500);
+      } else {
+        status.innerHTML = '<span style="color:#f59e0b">Not verified yet. Check your email.</span>';
+      }
+    });
+
+    onAuthStateChanged(auth, async user => {
+      if (user) {
+        await reload(user);
+        if (user.emailVerified) {
+          status.innerHTML = '<span style="color:#10b981">Already verified!</span>';
+          setTimeout(() => location.href = 'dashboard.html', 1500);
+        }
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login – SecureSign</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f8fafc; --card: rgba(255,255,255,0.25); --text: #1e293b; --text-light: #64748b;
+      --primary: #6366f1; --primary-hover: #4f46e5; --danger: #ef4444; --border: rgba(255,255,255,0.3);
+      --shadow: 0 8px 32px rgba(0,0,0,0.1);
+    }
+    [data-theme="dark"] {
+      --bg: #0f172a; --card: rgba(15,23,42,0.4); --text: #f1f5f9; --text-light: #94a3b8;
+      --primary: #818cf8; --primary-hover: #6366f1; --border: rgba(255,255,255,0.1);
+      --shadow: 0 8px 32px rgba(0,0,0,0.3);
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: var(--text);
+      min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px;
+    }
+    .container { max-width: 420px; width: 100%; }
+    .card {
+      background: var(--card); backdrop-filter: blur(16px); border-radius: 20px;
+      border: 1px solid var(--border); padding: 40px 32px; box-shadow: var(--shadow);
+      animation: fadeIn 0.6s ease-out;
+    }
+    .logo h1 {
+      font-size: 28px; font-weight: 700; text-align: center; margin-bottom: 32px;
+      background: linear-gradient(90deg, #6366f1, #8b5cf6);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .form-group { margin-bottom: 20px; position: relative; }
+    label { display: block; margin-bottom: 8px; font-size: 14px; color: var(--text-light); font-weight: 500; }
+    input {
+      width: 100%; padding: 14px 16px; border: 1px solid var(--border); border-radius: 12px;
+      background: rgba(255,255,255,0.1); color: var(--text); font-size: 16px; transition: 0.3s;
+    }
+    input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,0.2); }
+    .password-wrapper { position: relative; }
+    .toggle-pw {
+      position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+      cursor: pointer; color: var(--text-light); font-size: 18px; user-select: none;
+    }
+    .toggle-pw:hover { color: var(--primary); }
+    button {
+      width: 100%; padding: 14px; background: var(--primary); color: white; border: none;
+      border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.3s;
+      margin-top: 10px;
+    }
+    button:hover { background: var(--primary-hover); transform: translateY(-2px); }
+    .message { margin-top: 16px; text-align: center; font-size: 14px; min-height: 20px; }
+    .message.error { color: var(--danger); }
+    .links { text-align: center; margin-top: 24px; font-size: 14px; }
+    .links a { color: var(--primary); text-decoration: none; }
+    .theme-toggle {
+      position: absolute; top: 20px; right: 20px; background: var(--card); border: 1px solid var(--border);
+      width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; backdrop-filter: blur(10px); font-size: 20px; transition: 0.3s;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+
+  <div class="theme-toggle" id="themeToggle">Moon</div>
+
+  <div class="container">
+    <div class="card">
+      <div class="logo"><h1>SecureSign</h1></div>
+      <form id="loginForm">
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="loginEmail" required placeholder="you@example.com" />
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <div class="password-wrapper">
+            <input type="password" id="loginPassword" required placeholder="••••••••" />
+            <span class="toggle-pw" id="togglePassword">Show</span>
+          </div>
+        </div>
+        <button type="submit">Log In</button>
+      </form>
+      <div class="message" id="message"></div>
+      <div class="links">
+        <a href="index.html">Create an account</a> • <a href="#">Forgot password?</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase SDKs -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyB7e1wa8MUHZgn7epP0dOFtq2MmhSver6c",
+      authDomain: "signupapp-a385c.firebaseapp.com",
+      projectId: "signupapp-a385c",
+      storageBucket: "signupapp-a385c.firebasestorage.app",
+      messagingSenderId: "1089414066908",
+      appId: "1:1089414066908:web:1c5ed9d0a766a3385dfa19"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    // --- Theme Toggle ---
+    const themeToggle = document.getElementById('themeToggle');
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    themeToggle.textContent = savedTheme === 'dark' ? 'Sun' : 'Moon';
+
+    themeToggle.addEventListener('click', () => {
+      const newTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      themeToggle.textContent = newTheme === 'dark' ? 'Sun' : 'Moon';
+    });
+
+    // --- Password Show/Hide ---
+    const passwordInput = document.getElementById('loginPassword');
+    const toggleBtn = document.getElementById('togglePassword');
+
+    toggleBtn.addEventListener('click', () => {
+      const type = passwordInput.type === 'password' ? 'text' : 'password';
+      passwordInput.type = type;
+      toggleBtn.textContent = type === 'password' ? 'Show' : 'Hide';
+    });
+
+    // --- Login Form ---
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const email = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value;
+      const messageEl = document.getElementById('message');
+
+      messageEl.textContent = 'Logging in...';
+      messageEl.className = 'message';
+
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        if (!user.emailVerified) {
+          messageEl.innerHTML = '<span class="error">Please verify your email first.</span>';
+          await auth.signOut();
+          return;
+        }
+
+        // Success → go to dashboard
+        window.location.href = 'dashboard.html';
+
+      } catch (error) {
+        let msg = 'Login failed. ';
+        if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+          msg += 'Invalid email or password.';
+        } else if (error.code === 'auth/too-many-requests') {
+          msg += 'Too many attempts. Try again later.';
+        } else {
+          msg += error.message;
+        }
+        messageEl.innerHTML = `<span class="error">${msg}</span>`;
+      }
+    });
+
+    // --- Auto-redirect if already logged in ---
+    onAuthStateChanged(auth, (user) => {
+      if (user && user.emailVerified) {
+        window.location.href = 'dashboard.html';
+      }
+    });
+  </script>
+</body>
+</html>

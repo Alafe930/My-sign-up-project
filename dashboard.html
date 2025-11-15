@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard – SecureSign</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f8fafc; --card: rgba(255,255,255,0.25); --text: #1e293b; --text-light: #64748b;
+      --primary: #6366f1; --success: #10b981; --border: rgba(255,255,255,0.3);
+      --shadow: 0 8px 32px rgba(0,0,0,0.1);
+    }
+    [data-theme="dark"] {
+      --bg: #0f172a; --card: rgba(15,23,42,0.4); --text: #f1f5f9; --text-light: #94a3b8;
+      --primary: #818cf8; --border: rgba(255,255,255,0.1); --shadow: 0 8px 32px rgba(0,0,0,0.3);
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: var(--text); min-height: 100vh; padding: 20px;
+    }
+    .container { max-width: 800px; margin: 0 auto; }
+    .card {
+      background: var(--card); backdrop-filter: blur(16px); border-radius: 20px;
+      border: 1px solid var(--border); padding: 32px; margin-top: 40px; box-shadow: var(--shadow);
+      animation: fadeIn 0.6s ease-out;
+    }
+    .header {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;
+    }
+    .header h1 {
+      font-size: 28px; font-weight: 700;
+      background: linear-gradient(90deg, #6366f1, #8b5cf6);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .logout-btn {
+      background: #ef4444; color: white; border: none; padding: 10px 20px;
+      border-radius: 12px; font-weight: 600; cursor: pointer; transition: 0.3s;
+    }
+    .logout-btn:hover { background: #dc2626; }
+    .user-info {
+      background: rgba(99,102,241,0.1); padding: 24px; border-radius: 16px; margin-bottom: 24px;
+      line-height: 1.8;
+    }
+    .user-info p { margin: 10px 0; font-size: 16px; }
+    .user-info strong { color: var(--primary); }
+    .loading { color: var(--text-light); font-style: italic; }
+    .error { color: #ef4444; }
+    .theme-toggle {
+      position: fixed; top: 20px; right: 20px; background: var(--card); border: 1px solid var(--border);
+      width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; backdrop-filter: blur(10px); font-size: 20px; z-index: 1000;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+
+  <div class="theme-toggle" id="themeToggle">Moon</div>
+
+  <div class="container">
+    <div class="card">
+      <div class="header">
+        <h1>Dashboard</h1>
+        <button class="logout-btn" id="logoutBtn">Logout</button>
+      </div>
+
+      <div class="user-info" id="userInfo">
+        <p class="loading">Loading your info...</p>
+      </div>
+
+      <p>Welcome back! Your account is fully active.</p>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyB7e1wa8MUHZgn7epP0dOFtq2MmhSver6c",
+      authDomain: "signupapp-a385c.firebaseapp.com",
+      projectId: "signupapp-a385c",
+      storageBucket: "signupapp-a385c.firebasestorage.app",
+      messagingSenderId: "1089414066908",
+      appId: "1:1089414066908:web:1c5ed9d0a766a3385dfa19"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const userInfoEl = document.getElementById('userInfo');
+
+    // --- Theme Toggle ---
+    const themeToggle = document.getElementById('themeToggle');
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    themeToggle.textContent = savedTheme === 'dark' ? 'Sun' : 'Moon';
+
+    themeToggle.addEventListener('click', () => {
+      const newTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      themeToggle.textContent = newTheme === 'dark' ? 'Sun' : 'Moon';
+    });
+
+    // --- Auth State & Load User Data ---
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      if (!user.emailVerified) {
+        window.location.href = 'verify.html';
+        return;
+      }
+
+      // Load user profile from Firestore
+      try {
+        const docRef = doc(db, "users", user.uid);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          const created = data.createdAt?.toDate?.() || new Date(data.createdAt?.seconds * 1000);
+
+          userInfoEl.innerHTML = `
+            <p><strong>Name:</strong> ${data.name || 'Not set'}</p>
+            <p><strong>Email:</strong> ${data.email}</p>
+            <p><strong>Phone:</strong> ${data.phone || 'Not provided'}</p>
+            <p><strong>Member Since:</strong> ${created.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+            <p><strong>Status:</strong> <span style="color:#10b981">Email Verified</span></p>
+          `;
+        } else {
+          userInfoEl.innerHTML = `<p class="error">No profile data found. Please re-register.</p>`;
+        }
+      } catch (error) {
+        console.error("Error loading user data:", error);
+        userInfoEl.innerHTML = `<p class="error">Failed to load data: ${error.message}</p>`;
+      }
+    });
+
+    // --- Logout ---
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      signOut(auth).then(() => {
+        window.location.href = 'login.html';
+      }).catch((err) => {
+        alert('Logout failed: ' + err.message);
+      });
+    });
+  </script>
+</body>
+</html>
