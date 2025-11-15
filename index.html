@@ -285,10 +285,9 @@
       msg.textContent = 'Creating account...';
 
       try {
-        const BASE_URL = 'https://alafe930.github.io/My-sign-up-project/';
         const cred = await createUserWithEmailAndPassword(auth, email, pwd);
         const actionCodeSettings = {
-  url: '$(BASE_URL)verify.html', // YOUR CUSTOM PAGE
+  url: 'https://alafe930.github.io/My-sign-up-project/verify.html', // YOUR CUSTOM PAGE
   handleCodeInApp: true
 };
 
