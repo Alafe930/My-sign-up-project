@@ -286,8 +286,12 @@
 
       try {
         const cred = await createUserWithEmailAndPassword(auth, email, pwd);
-        await sendEmailVerification(cred.user);
+        const actionCodeSettings = {
+  url: 'https://alafe930.github.io/My-sign-up-project/verify.html', // YOUR CUSTOM PAGE
+  handleCodeInApp: true
+};
 
+await sendEmailVerification(cred.user, actionCodeSettings);
         await setDoc(doc(db, "users", cred.user.uid), {
           name, email, phone, createdAt: new Date()
         });
